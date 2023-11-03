@@ -19,7 +19,7 @@ handle_secondary_repo() {
     local secondary_repo_url=$1
 
     # Extract repo details from URL for `gh` command
-    local repo_identifier=$(echo $secondary_repo_url | sed -E 's|https://github.com/||g' | sed -E 's/.git//g')
+    local repo_identifier=$(echo $secondary_repo_url | sed -E 's|git@github.com||g' | sed -E 's/.git//g')
     local sanitized_repo_identifier=$(echo $repo_identifier | tr '/:' '__')
 
     # Add a remote for the secondary repository
