@@ -19,7 +19,11 @@ handle_secondary_repo() {
     local secondary_repo_url=$1
 
     # Extract repo details from URL for `gh` command
+<<<<<<< HEAD
     local repo_identifier=$(echo $secondary_repo_url | sed -E 's|https://github.com/||g' | sed -E 's/.git//g' | sed -E 's|:|/|g')
+=======
+    local repo_identifier=$(echo $secondary_repo_url | sed -E 's|https://github.com/||g' | sed -E 's/.git//g')
+>>>>>>> backup-main
     local sanitized_repo_identifier=$(echo $repo_identifier | tr '/:' '__')
 
     # Add a remote for the secondary repository
@@ -28,6 +32,7 @@ handle_secondary_repo() {
     # Fetch all the branches and commits from the secondary repository
     git fetch secondary_repo
 
+<<<<<<< HEAD
     # Create and checkout a new branch named based on the secondary repo
     local branch_name="merge_$sanitized_repo_identifier"
     git checkout -b $branch_name
@@ -62,6 +67,72 @@ handle_secondary_repo() {
     fi
 }
 
+=======
+    read -p "Choose a merge method: (1) Merge into new directory (2) Merge into new branch and then into main: " merge_choice
+
+    if [[ "$merge_choice" == "1" ]]; then
+        # Create a folder name based on the secondary repo
+        local folder_name=$(echo $repo_identifier | sed -E 's|/|_|g')
+
+        # Use git subtree to add content of secondary repo into a new folder
+        git subtree add --prefix=$folder_name secondary_repo/main
+
+        # Commit the changes
+        git add .
+        git commit -m "Added $repo_identifier to folder $folder_name"
+        git add .
+        # Push the changes to the primary repo
+        git push origin main
+    elif [[ "$merge_choice" == "2" ]]; then
+        # Create and checkout a new branch named based on the secondary repo
+        local branch_name="merge_$sanitized_repo_identifier"
+        git checkout -b $branch_name
+
+        # Merge the secondary repository's branch into this new branch
+        git merge secondary_repo/main --allow-unrelated-histories
+
+        if [ $? -eq 0 ]; then
+            echo "Merge successful."
+            git commit -m "Merged $repo_identifier into $branch_name"
+            git push origin $branch_name
+
+            # Checkout the primary branch (assuming it's named "main")
+            git checkout main
+
+            # Merge the branch with content from the secondary repository into the primary branch
+            git merge $branch_name
+            if [ $? -eq 0 ]; then
+                echo "Merged $branch_name into main successfully."
+            else
+                echo "Merge of $branch_name into main failed. Please resolve conflicts manually."
+                exit 1
+            fi
+
+            # Push the merged changes to the primary repository
+            git push origin main
+        else
+            echo "Merge failed. Please resolve conflicts manually."
+            exit 1
+        fi
+    else
+        echo "Invalid choice. Exiting..."
+        exit 1
+    fi
+
+    # Cleanup: Remove the secondary repo remote and (optionally) the local branch
+    git remote remove secondary_repo
+
+    # Prompt for deletion
+    read -p "Do you want to delete the secondary repository $secondary_repo_url? (yes/no): " response        
+    if [[ "$response" == "yes" ]]; then
+        gh repo delete $repo_identifier --confirm
+        echo "Secondary repository $secondary_repo_url deleted."
+    else
+        echo "Skipped deleting the secondary repository $secondary_repo_url."
+    fi
+}
+
+>>>>>>> backup-main
 # Main script execution
 read -p "How many secondary repositories do you want to process? " num_repos
 for ((i=1; i<=$num_repos; i++)); do
