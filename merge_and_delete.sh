@@ -19,11 +19,7 @@ handle_secondary_repo() {
     local secondary_repo_url=$1
 
     # Extract repo details from URL for `gh` command
-<<<<<<< HEAD
-    local repo_identifier=$(echo $secondary_repo_url | sed -E 's|https://github.com/||g' | sed -E 's/.git//g' | sed -E 's|:|/|g')
-=======
     local repo_identifier=$(echo $secondary_repo_url | sed -E 's|https://github.com/||g' | sed -E 's/.git//g')
->>>>>>> backup-main
     local sanitized_repo_identifier=$(echo $repo_identifier | tr '/:' '__')
 
     # Add a remote for the secondary repository
@@ -32,42 +28,6 @@ handle_secondary_repo() {
     # Fetch all the branches and commits from the secondary repository
     git fetch secondary_repo
 
-<<<<<<< HEAD
-    # Create and checkout a new branch named based on the secondary repo
-    local branch_name="merge_$sanitized_repo_identifier"
-    git checkout -b $branch_name
-
-    # Merge the secondary repository's branch into this new branch
-    git merge secondary_repo/main --allow-unrelated-histories
-
-    # Check if the merge was successful
-    if [ $? -eq 0 ]; then
-        echo "Merge successful."
-        git add .
-        git commit -m "Merged $repo_identifier into $branch_name"
-        git add .
-        git push -u origin $branch_name
-    else
-        echo "Merge failed. Please resolve conflicts manually."
-        exit 1
-    fi
-
-    # Cleanup: Remove the secondary repo remote and (optionally) the local branch
-    git remote remove secondary_repo
-    # Uncomment the next line if you wish to delete the local branch after merge
-    # git branch -d $branch_name
-
-    # Prompt for deletion
-    read -p "Do you want to delete the secondary repository $secondary_repo_url? (yes/no): " response
-    if [[ "$response" == "yes" ]]; then
-        gh repo delete $repo_identifier --confirm
-        echo "Secondary repository $secondary_repo_url deleted."
-    else
-        echo "Skipped deleting the secondary repository $secondary_repo_url."
-    fi
-}
-
-=======
     read -p "Choose a merge method: (1) Merge into new directory (2) Merge into new branch and then into main: " merge_choice
 
     if [[ "$merge_choice" == "1" ]]; then
@@ -76,9 +36,8 @@ handle_secondary_repo() {
 
         # Use git subtree to add content of secondary repo into a new folder
         git subtree add --prefix=$folder_name secondary_repo/main
-
-        # Commit the changes
         git add .
+        # Commit the changes
         git commit -m "Added $repo_identifier to folder $folder_name"
         git add .
         # Push the changes to the primary repo
@@ -132,9 +91,13 @@ handle_secondary_repo() {
     fi
 }
 
->>>>>>> backup-main
 # Main script execution
 read -p "How many secondary repositories do you want to process? " num_repos
+if ! [[ $num_repos =~ ^[0-9]+$ ]]; then
+    echo "Please enter a valid number."
+    exit 1
+fi
+
 for ((i=1; i<=$num_repos; i++)); do
     echo "Enter the URL of secondary repository #$i (e.g., https://github.com/username/repo.git):"
     read secondary_repo_url
