@@ -1,107 +1,77 @@
 #!/bin/bash
 
-# Check for .git directory
-if [ -d .git ]; then
-    echo "This directory is already a Git repository."
-else
-    echo ".git directory not found. Initializing a new Git repository..."
-    git init
-fi
+# Function to prompt the user before proceeding
+start_prompt() {
+    read -p "This script will merge secondary repositories into the main one. Continue? (yes/no): " response
+    if [[ "$response" != "" ]]; then
+        exit 1
+    fi
+}
+
+# Ensure the current directory is a Git repository
+check_git_directory() {
+    if [ ! -d .git ]; then
+        echo "This directory is not a Git repository. Exiting."
+        exit 1
+    fi
+}
 
 # Ensure GitHub CLI (`gh`) is installed
-if ! command -v gh &> /dev/null; then
-    echo "GitHub CLI (gh) is not installed. Please install it first."
-    exit
-fi
+check_github_cli() {
+    if ! command -v gh &> /dev/null; then
+        echo "GitHub CLI (gh) is not installed. Please install it first."
+        exit 1
+    fi
+}
 
 # Function to handle merging and deleting a single secondary repo
 handle_secondary_repo() {
     local secondary_repo_url=$1
+    local repo_name=$(basename $secondary_repo_url .git)  # Extract repo name from URL
 
-    # Extract repo details from URL for `gh` command
-    local repo_identifier=$(echo $secondary_repo_url | sed -E 's|git@github.com||g' | sed -E 's/.git//g')
-    local sanitized_repo_identifier=$(echo $repo_identifier | tr '/:' '__')
+    # Remove existing secondary_repo remote if it exists
+    git remote | grep -q secondary_repo && git remote remove secondary_repo
 
-    # Add a remote for the secondary repository
+    # Add secondary repo as a remote and fetch its content
     git remote add secondary_repo $secondary_repo_url
-
-    # Fetch all the branches and commits from the secondary repository
     git fetch secondary_repo
 
-    read -p "Choose a merge method: (1) Merge into new directory (2) Merge into new branch and then into main: " merge_choice
+    # Create a new directory for the secondary repository and read its content into the directory
+    mkdir $repo_name
+    git read-tree --prefix=$repo_name/ -u secondary_repo/main
 
-    if [[ "$merge_choice" == "1" ]]; then
-        # Create a folder name based on the secondary repo
-        local folder_name=$(echo $repo_identifier | sed -E 's|/|_|g')
+    # Commit the changes
+    git commit -m "Merged $repo_name into its own directory"
 
-        # Use git subtree to add content of secondary repo into a new folder
-        git subtree add --prefix=$folder_name secondary_repo/main
-        git add .
-        # Commit the changes
-        git commit -m "Added $repo_identifier to folder $folder_name"
-        git add .
-        # Push the changes to the primary repo
-        git push origin main
-    elif [[ "$merge_choice" == "2" ]]; then
-        # Create and checkout a new branch named based on the secondary repo
-        local branch_name="merge_$sanitized_repo_identifier"
-        git checkout -b $branch_name
-
-        # Merge the secondary repository's branch into this new branch
-        git merge secondary_repo/main --allow-unrelated-histories
-
-        if [ $? -eq 0 ]; then
-            echo "Merge successful."
-            git commit -m "Merged $repo_identifier into $branch_name"
-            git push origin $branch_name
-
-            # Checkout the primary branch (assuming it's named "main")
-            git checkout main
-
-            # Merge the branch with content from the secondary repository into the primary branch
-            git merge $branch_name
-            if [ $? -eq 0 ]; then
-                echo "Merged $branch_name into main successfully."
-            else
-                echo "Merge of $branch_name into main failed. Please resolve conflicts manually."
-                exit 1
-            fi
-
-            # Push the merged changes to the primary repository
-            git push origin main
-        else
-            echo "Merge failed. Please resolve conflicts manually."
-            exit 1
-        fi
-    else
-        echo "Invalid choice. Exiting..."
-        exit 1
-    fi
-
-    # Cleanup: Remove the secondary repo remote and (optionally) the local branch
+    # Cleanup
     git remote remove secondary_repo
 
-    # Prompt for deletion
+    # Prompt for deletion of the secondary repo
     read -p "Do you want to delete the secondary repository $secondary_repo_url? (yes/no): " response        
     if [[ "$response" == "yes" ]]; then
-        gh repo delete $repo_identifier --confirm
-        echo "Secondary repository $secondary_repo_url deleted."
-    else
-        echo "Skipped deleting the secondary repository $secondary_repo_url."
+        gh repo delete $repo_name --confirm
     fi
 }
 
 # Main script execution
-read -p "How many secondary repositories do you want to process? " num_repos
-if ! [[ $num_repos =~ ^[0-9]+$ ]]; then
-    echo "Please enter a valid number."
-    exit 1
-fi
+main() {
+    start_prompt
+    check_git_directory
+    check_github_cli
 
-for ((i=1; i<=$num_repos; i++)); do
-    echo "Enter the URL of secondary repository #$i (e.g., https://github.com/username/repo.git):"
-    read secondary_repo_url
-    handle_secondary_repo $secondary_repo_url
-done
+    read -p "Enter the number of secondary repositories to merge: " num_repos
+    if ! [[ $num_repos =~ ^[0-9]+$ ]]; then
+        echo "Invalid input. Exiting."
+        exit 1
+    fi
 
-echo "Script finished!"
+    for ((i=1; i<=$num_repos; i++)); do
+        echo "Enter the URL of secondary repository #$i:"
+        read secondary_repo_url
+        handle_secondary_repo $secondary_repo_url
+    done
+
+    echo "All done!"
+}
+
+main
