@@ -2,5 +2,19 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Projects/coding_temple/Code_Structure" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Projects/intelliJ/back-frontend" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Projects/intelliJ/back-frontend - Copy" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Projects/intelliJ/back-frontend - Copy - Copy" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Projects/intelliJ/back-frontend - Copy - Copy - Copy" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Projects/intelliJ/code-editor" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Projects/intelliJ/devContainer" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Projects/intelliJ/final_project" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Projects/intelliJ/like_button" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Projects/intelliJ/management" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Projects/intelliJ/monaco-react-typescript" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Projects/intelliJ/mylogin" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Projects/intelliJ/react-flask" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Projects/notecode" vcs="Git" />
   </component>
 </project>
